@@ -1,27 +1,52 @@
-IMAGE_NAME = notebook-app
-CONTAINER_NAME = notebook-app-container
+
+APP_NAME = notebook-app
 PORT = 8080
 
-.PHONY: docker-run docker-build docker-stop docker-check run
+.PHONY: run stop clean dev build
 
-docker-run: docker-build
-	@echo "Starting container..."
-	docker run -d -p $(PORT):8080 --name $(CONTAINER_NAME) $(IMAGE_NAME)
-	@echo "App available at: http://localhost:$(PORT)"
+
+run: docker-build docker-run
+
 
 docker-build:
 	@echo "Building Docker image..."
-	docker build -t $(IMAGE_NAME) .
+	docker build -t $(APP_NAME) .
 
-docker-stop:
-	@echo "Stopping container..."
-	docker stop $(CONTAINER_NAME) 2> nul || echo "Container not running"
-	docker rm $(CONTAINER_NAME) 2> nul || echo "Container not exists"
 
-docker-check:
-	@echo "Checking Docker..."
-	docker --version
-	docker ps
+docker-run:
+	@echo "Starting container on port $(PORT)..."
+	docker run -d -p $(PORT):8080 --name $(APP_NAME)-container $(APP_NAME)
 
-run:
+
+dev:
 	npm run dev
+
+
+build:
+	npm run build
+
+
+stop:
+	@echo "Stopping container..."
+	docker stop $(APP_NAME)-container || true
+	@echo "Removing container..."
+	docker rm $(APP_NAME)-container || true
+
+
+clean: stop
+	@echo "Removing Docker image..."
+	docker rmi $(APP_NAME) || true
+	@echo "Cleaning node modules..."
+	rm -rf node_modules dist
+
+
+logs:
+	docker logs -f $(APP_NAME)-container
+
+
+status:
+	docker ps -f name=$(APP_NAME)-container
+
+
+install:
+	npm install
